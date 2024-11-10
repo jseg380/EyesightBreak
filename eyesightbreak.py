@@ -235,7 +235,6 @@ def show_break(break_type: BreakType) -> bool:
 
 
 
-show_break(BreakType.SHORT)
 # Main function
 break_counter = 0
 
