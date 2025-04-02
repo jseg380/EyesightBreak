@@ -1,2 +1,2 @@
-# EyeSightBreak
-Program to prevent Computer Vision Syndrome.
+# EyesightBreak
+Program to prevent asthenopia (eye strain).
