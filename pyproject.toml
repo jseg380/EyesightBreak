@@ -1,0 +1,38 @@
+#:schema https://json.schemastore.org/pyproject.json
+[build-system]
+requires = [
+  "setuptools>=61.0"
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eyesight-break"
+version = "2.0.0"
+dependencies = [
+  "desktop-notifier==6.0.0",
+  "screeninfo==0.8.1",
+]
+requires-python = ">=3.8,<3.9"
+description = "Program to prevent eye strain"
+readme = "README.md"
+license = { file = "LICENSE" }
+classifiers = [
+  "License :: OSI Approved :: GNU Lesser General Public License v3 (LGPLv3)",
+]
+
+[project.optional-dependencies]
+dev = [
+  "ruff == 0.11.2",
+]
+test = [
+  "pytest == 8.3.2",
+]
+
+[project.urls]
+Homepage = "https://github.com/jseg380/EyesightBreak"
+Repository = "https://github.com/jseg380/EyesightBreak.git"
+"Bug Tracker" = "https://github.com/jseg380/EyesightBreak/issues"
+
+# TODO: add entry point / script
+# [project.scripts]
+# eye_sight_break = ""
