@@ -1,10 +1,13 @@
 import tkinter
+from asyncio import run as async_run
 from enum import Enum
+from pathlib import Path
 from random import choice as random_choice
-from screeninfo import get_monitors
-from typing import Dict, Generator, List, Tuple
 from time import sleep
+from typing import Dict, Generator, List, Tuple
 
+from desktop_notifier import DesktopNotifier, Icon
+from screeninfo import get_monitors
 
 #··············································································
 # Configuration
@@ -15,7 +18,8 @@ class BreakType(Enum):
 
 
 class BreakConfig:
-    def __init__(self, duration: int, interval: int, postponeable: bool, messages: List[str]):
+    __slots__ = ('duration', 'interval', 'postponeable', 'messages')
+    def __init__(self, duration: int, interval: int, postponeable: bool, messages: List[str]) -> None:
         self.duration: int = duration
         self.interval: int = interval
         self.postponeable: bool = postponeable
@@ -30,14 +34,23 @@ class WinConfig:
     font: Tuple = ('Arial', 24)
 
 
-# Time interval between breaks
-INTERVAL_UNIT = 60 * 10
-SHORTS_INTERVALS_PER_LONG = 3
+INTERVAL_UNIT: int = 60 * 10            # s/min * min
+"""Time interval in seconds between breaks"""
+
+SHORTS_INTERVALS_PER_LONG: int = 3
+"""Amount of short breaks (+1) that are between two long breaks"""
+
+PREV_TIME: int = 7
+"""Time in seconds before the break begins when a notification about the upcoming break is sent"""
+
+# ICON: Icon = Icon(Path('eye.svg').resolve())
+APP_ICON: Icon = Icon(Path('eye.svg').resolve())
+"""Icon of the app to show in the warning notification"""
 
 
 # BreakConfig class created to avoid making spelling mistakes and not realizing
-# because of the autocompletion help of the IDE
-BREAKS = {
+# thanks of the autocompletion help of the IDE
+BREAKS: Dict[BreakType, BreakConfig] = {
     BreakType.SHORT: BreakConfig(
         duration=20,
         interval=INTERVAL_UNIT,
@@ -62,7 +75,7 @@ BREAKS = {
         ]
     ),
 }
-
+"""Dictionary containing every break with their associated configuration"""
 
 
 #··············································································
@@ -123,7 +136,7 @@ def create_window(
     )
     timer_label.place(relx=0.5, rely=0.50, anchor='center')
 
-    def update_timer_label(timer: Generator):
+    def update_timer_label(timer: Generator) -> None:
         time_left = next(timer)
 
         # Timer ran out
@@ -211,6 +224,8 @@ def show_break(break_type: BreakType) -> bool:
         postponed = True
         close_windows()
 
+    message = random_choice(BREAKS[break_type].messages)
+
     for monitor in get_monitors():
         geometry = {
             'width': monitor.width,
@@ -219,7 +234,7 @@ def show_break(break_type: BreakType) -> bool:
             'offset_y': monitor.y,
         }
 
-        message = random_choice(BREAKS[break_type].messages)
+        # message = random_choice(BREAKS[break_type].messages)
 
         timer_generator = timer(BREAKS[break_type].duration)
 
@@ -228,14 +243,23 @@ def show_break(break_type: BreakType) -> bool:
         win.bind('<Escape>', skip_break)
         win.bind('<space>', postpone_break)
 
-
     root.mainloop()
 
     return postponed
 
 
+async def send_notification(notifier: DesktopNotifier, break_type: BreakType) -> None:
+    await notifier.send(
+        title='Eyesight Break',
+        message=f'Ready for a {break_type.value.lower()} break in {PREV_TIME} seconds',
+        timeout=5
+    )
 
+
+#··············································································
 # Main function
+
+notifier = DesktopNotifier(app_name='EyesightBreak', app_icon=APP_ICON)
 break_counter = 0
 
 while True:
@@ -244,10 +268,12 @@ while True:
     if break_counter % SHORTS_INTERVALS_PER_LONG and break_counter != 0:
         break_type = BreakType.LONG
 
-
     # Sleep interval between breaks
-    sleep(INTERVAL_UNIT)
+    sleep(INTERVAL_UNIT - PREV_TIME)
 
+    # Send notification and sleep the remaining time
+    async_run(send_notification(notifier, break_type))
+    sleep(PREV_TIME)
 
     # Display break for a period of time, then redo this process again
     postponed = show_break(break_type)
