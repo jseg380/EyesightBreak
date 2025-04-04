@@ -5,6 +5,7 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
+
 [project]
 name = "eyesight-break"
 version = "2.0.0"
@@ -13,7 +14,7 @@ dependencies = [
   "screeninfo==0.8.1",
 ]
 requires-python = ">=3.8,<3.9"
-description = "Program to prevent eye strain"
+description = "A simple program to remind you to take eye breaks"
 readme = "README.md"
 license = { file = "LICENSE" }
 classifiers = [
@@ -33,6 +34,42 @@ Homepage = "https://github.com/jseg380/EyesightBreak"
 Repository = "https://github.com/jseg380/EyesightBreak.git"
 "Bug Tracker" = "https://github.com/jseg380/EyesightBreak/issues"
 
-# TODO: add entry point / script
-# [project.scripts]
-# eye_sight_break = ""
+[project.scripts]
+eyesightbreak = "eyesight_break.main:main"
+
+
+[tool.ruff]
+# Rule Selection
+select = [
+  "E",   # pycodestyle errors (PEP 8)
+  "F",   # Pyflakes (basic errors)
+  "I",   # isort (import sorting)
+  "B",   # flake8-bugbear (bug prevention)
+  "UP",  # pyupgrade (modern Python)
+  "D",   # pydocstyle (docs)
+  "Q",   # flake8-quotes (quote consistency)
+]
+
+# Ignore contentious rules
+ignore = [
+  "E203",  # Whitespace before ':' (e.g., in slices like x[1:2])
+  "E501",  # Line length (handled globally via `line-length`)
+]
+
+# Line length and quotes
+line-length = 120
+
+[tool.ruff.flake8-quotes]
+inline-quotes = "single"  # Forces single quotes (')
+multiline-quotes = "single"  # For multiline strings
+docstring-quotes = "double"  # Keep docstrings as double quotes (PEP 257)
+
+# Import sorting (isort)
+[tool.ruff.isort]
+known-first-party = ["eyesight-break"]
+required-imports = ["from __future__ import annotations"]
+lines-after-imports = 2  # Blank lines after imports
+
+# Per-file ignores
+[tool.ruff.per-file-ignores]
+"tests/**" = ["D"]        # Disable docstring checks in tests
