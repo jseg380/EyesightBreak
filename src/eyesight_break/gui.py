@@ -1,92 +1,15 @@
-import tkinter
-from asyncio import run as async_run
-from enum import Enum
-from pathlib import Path
-from random import choice as random_choice
-from time import sleep
-from typing import Dict, Generator, List, Tuple
+from __future__ import annotations
 
-from desktop_notifier import DesktopNotifier, Icon
+import tkinter
+from random import choice as random_choice
+from typing import Generator
+
 from screeninfo import get_monitors
 
-#··············································································
-# Configuration
-
-class BreakType(Enum):
-    SHORT = 'short'
-    LONG = 'long'
+from .config import BREAKS, BreakType, WinConfig
 
 
-class BreakConfig:
-    __slots__ = ('duration', 'interval', 'postponeable', 'messages')
-    def __init__(self, duration: int, interval: int, postponeable: bool, messages: List[str]) -> None:
-        self.duration: int = duration
-        self.interval: int = interval
-        self.postponeable: bool = postponeable
-        self.messages: List[str] = messages
-
-
-class WinConfig:
-    alpha: float = 0.85
-    bg_color: str = 'black'
-    fg_color: str = 'white'
-    title: str = 'EyesightBreak'
-    font: Tuple = ('Arial', 24)
-
-
-INTERVAL_UNIT: int = 60 * 10            # s/min * min
-"""Time interval in seconds between breaks"""
-
-SHORTS_INTERVALS_PER_LONG: int = 3
-"""Amount of short breaks (+1) that are between two long breaks"""
-
-PREV_TIME: int = 7
-"""Time in seconds before the break begins when a notification about the upcoming break is sent"""
-
-# ICON: Icon = Icon(Path('eye.svg').resolve())
-APP_ICON: Icon = Icon(Path('eye.svg').resolve())
-"""Icon of the app to show in the warning notification"""
-
-
-# BreakConfig class created to avoid making spelling mistakes and not realizing
-# thanks of the autocompletion help of the IDE
-BREAKS: Dict[BreakType, BreakConfig] = {
-    BreakType.SHORT: BreakConfig(
-        duration=20,
-        interval=INTERVAL_UNIT,
-        postponeable=False,
-        messages=[
-            'Tightly close your eyes',
-            'Roll your eyes a few times to each side',
-            'Rotate your eyes in clockwise direction',
-            'Rotate your eyes in counterclockwise direction',
-            'Blink your eyes',
-            'Focus on a point in the far distance',
-            'Have some water',
-        ]
-    ),
-    BreakType.LONG: BreakConfig(
-        duration=180,
-        interval=INTERVAL_UNIT * SHORTS_INTERVALS_PER_LONG,
-        postponeable=True,
-        messages=[
-            'Walk for a while',
-            'Lean back at your seat and relax',
-        ]
-    ),
-}
-"""Dictionary containing every break with their associated configuration"""
-
-
-#··············································································
-# Functions
-
-def create_window(
-        root: tkinter.Tk,
-        geometry: Dict[str, int],
-        text: str,
-        timer: Generator
-    ) -> tkinter.Toplevel:
+def create_window(root: tkinter.Tk, geometry: dict[str, int], text: str, timer: Generator) -> tkinter.Toplevel:
     """Create a tkinter window that will be used as a skeleton for breaks.
 
     Args:
@@ -104,6 +27,7 @@ def create_window(
 
     Returns:
         (tkinter.Toplevel): a child window of the root window passed as a parameter
+
     """
     win: tkinter.Toplevel = tkinter.Toplevel(root)
     win.title(WinConfig.title)
@@ -118,21 +42,13 @@ def create_window(
     # Message with the break advice (static)
     label_text: str = text
     label: tkinter.Label = tkinter.Label(
-        win,
-        text=label_text,
-        font=WinConfig.font,
-        fg=WinConfig.fg_color,
-        bg=WinConfig.bg_color
+        win, text=label_text, font=WinConfig.font, fg=WinConfig.fg_color, bg=WinConfig.bg_color
     )
     label.place(relx=0.5, rely=0.44, anchor='center')
 
     # Message with the timer (dynamic)
     timer_label = tkinter.Label(
-        win,
-        text=next(timer),
-        font=WinConfig.font,
-        bg=WinConfig.bg_color,
-        fg=WinConfig.fg_color
+        win, text=next(timer), font=WinConfig.font, bg=WinConfig.bg_color, fg=WinConfig.fg_color
     )
     timer_label.place(relx=0.5, rely=0.50, anchor='center')
 
@@ -152,7 +68,7 @@ def create_window(
 
     # Setting the background color of the windows transparent
     # This code MUST be executed after setting the geometry to work properly
-    win.wait_visibility(win) # Needed for transparency to work in X11
+    win.wait_visibility(win)  # Needed for transparency to work in X11
     # These two lines must be after wait_visibility
     win.attributes('-alpha', WinConfig.alpha)
     win.attributes('-fullscreen', True)
@@ -162,12 +78,13 @@ def create_window(
 
 def format_time(seconds: int) -> str:
     """Format time in seconds to minutes and seconds.
-    
+
     Args:
         seconds (int): time in seconds
 
     Returns:
         (str): time formatted in MM:SS where MM is minutes and SS seconds
+
     """
     minutes = seconds // 60
     remaining_seconds = seconds % 60
@@ -184,6 +101,7 @@ def timer(seconds: int) -> Generator:
     Returns:
         (Generator): when the timer is still up
         (None): when the timer rans out
+
     """
     n = seconds
     while n >= 0:
@@ -201,6 +119,7 @@ def show_break(break_type: BreakType) -> bool:
 
     Returns:
         (bool): True if the break was postponed, False otherwise
+
     """
     # Create root window, which is used as a puppeteer to control an undefined
     # number of windows painlessly
@@ -215,11 +134,11 @@ def show_break(break_type: BreakType) -> bool:
         root.destroy()
 
     # Skipping a break simply means closing the windows and continuing
-    def skip_break(event = None):
+    def skip_break(event=None):
         close_windows()
 
     # Postponing break, we have to inform of the postponing by returning True
-    def postpone_break(event = None):
+    def postpone_break(event=None):
         nonlocal postponed
         postponed = True
         close_windows()
@@ -246,38 +165,3 @@ def show_break(break_type: BreakType) -> bool:
     root.mainloop()
 
     return postponed
-
-
-async def send_notification(notifier: DesktopNotifier, break_type: BreakType) -> None:
-    await notifier.send(
-        title='Eyesight Break',
-        message=f'Ready for a {break_type.value.lower()} break in {PREV_TIME} seconds',
-        timeout=5
-    )
-
-
-#··············································································
-# Main function
-
-notifier = DesktopNotifier(app_name='EyesightBreak', app_icon=APP_ICON)
-break_counter = 0
-
-while True:
-    # Logic to decide which type of break should be displayed
-    break_type: BreakType = BreakType.SHORT
-    if break_counter % SHORTS_INTERVALS_PER_LONG and break_counter != 0:
-        break_type = BreakType.LONG
-
-    # Sleep interval between breaks
-    sleep(INTERVAL_UNIT - PREV_TIME)
-
-    # Send notification and sleep the remaining time
-    async_run(send_notification(notifier, break_type))
-    sleep(PREV_TIME)
-
-    # Display break for a period of time, then redo this process again
-    postponed = show_break(break_type)
-
-    # If the break hasn't been postponed, increase the break counter
-    if not postponed:
-        break_counter += 1
