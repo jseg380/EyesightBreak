@@ -41,7 +41,7 @@ ICON_PATH: Path = Path('eye.svg').resolve()
 
 
 # BreakConfig class created to avoid making spelling mistakes and not realizing
-# thanks of the autocompletion help of the IDE
+# thanks to the autocompletion help of the IDE
 BREAKS: dict[BreakType, BreakConfig] = {
     BreakType.SHORT: BreakConfig(
         duration=20,
